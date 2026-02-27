@@ -1,0 +1,53 @@
+{
+  "name": "@heurist/skills-cli",
+  "version": "0.1.0",
+  "description": "CLI tool for browsing, installing, and managing Heurist Mesh skills from the skill marketplace registry.",
+  "type": "module",
+  "bin": {
+    "heurist-skills": "./bin/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/cli.ts",
+    "format": "prettier --write 'src/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts'",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "cli",
+    "skills",
+    "heurist",
+    "ai-agents",
+    "skill-marketplace",
+    "crypto",
+    "defi"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heurist-network/heurist-skills-cli.git"
+  },
+  "author": "Heurist Network",
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "dotenv": "^17.3.1",
+    "gray-matter": "^4.0.3",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "prettier": "^3.8.1",
+    "tsup": "^8.4.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@10.30.3"
+}
