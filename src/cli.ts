@@ -19,9 +19,13 @@ import pc from "picocolors";
 const VERSION = "0.1.0";
 
 const LOGO = `
-${pc.cyan("╦ ╦╔═╗╦ ╦╦═╗╦╔═╗╔╦╗")}
-${pc.cyan("╠═╣║╣ ║ ║╠╦╝║╚═╗ ║ ")}
-${pc.cyan("╩ ╩╚═╝╚═╝╩╚═╩╚═╝ ╩ ")} ${pc.dim("skills")} ${pc.dim(`v${VERSION}`)}
+${pc.cyan("██╗  ██╗███████╗██╗   ██╗██████╗ ██╗███████╗████████╗")}
+${pc.cyan("██║  ██║██╔════╝██║   ██║██╔══██╗██║██╔════╝╚══██╔══╝")}
+${pc.cyan("███████║█████╗  ██║   ██║██████╔╝██║███████╗   ██║")}
+${pc.cyan("██╔══██║██╔══╝  ██║   ██║██╔══██╗██║╚════██║   ██║")}
+${pc.cyan("██║  ██║███████╗╚██████╔╝██║  ██║██║███████║   ██║")}
+${pc.cyan("╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝╚══════╝   ╚═╝")}
+${pc.dim(`  skills v${VERSION}`)}
 `;
 
 function printHelp(): void {
@@ -29,13 +33,13 @@ function printHelp(): void {
   console.log(`${pc.bold("Usage:")} heurist-skills <command> [options]`);
   console.log();
   console.log(`${pc.bold("Commands:")}`);
-  console.log(`  ${pc.cyan("add")} <slug>          Install a skill from the marketplace`);
-  console.log(`  ${pc.cyan("remove")} <slug>       Uninstall a skill`);
-  console.log(`  ${pc.cyan("list")}                List project-installed skills`);
+  console.log(`  ${pc.cyan("add")} <slug>          Install a skill from the marketplace  (aliases: install)`);
+  console.log(`  ${pc.cyan("remove")} <slug>       Uninstall a skill                    (aliases: rm, uninstall)`);
+  console.log(`  ${pc.cyan("list")}                List project-installed skills          (aliases: ls)`);
   console.log(`  ${pc.cyan("list")} --global       List global-installed skills`);
-  console.log(`  ${pc.cyan("find")} [query]        Search the skill marketplace  (aliases: f, search)`);
-  console.log(`  ${pc.cyan("info")} <slug>         Show detailed skill info`);
-  console.log(`  ${pc.cyan("check-updates")}       Check for available updates`);
+  console.log(`  ${pc.cyan("find")} [query]        Search the skill marketplace          (aliases: search, f)`);
+  console.log(`  ${pc.cyan("info")} <slug>         Show detailed skill info              (aliases: show)`);
+  console.log(`  ${pc.cyan("check")}               Check for available updates           (aliases: check-updates, update-check)`);
   console.log(`  ${pc.cyan("help")}                Show this help`);
   console.log();
   console.log(`${pc.bold("Options:")}`);
@@ -43,7 +47,8 @@ function printHelp(): void {
   console.log(`  ${pc.dim("-a, --agent <agent>")}  Target or filter specific agents`);
   console.log(`  ${pc.dim("--copy")}               Copy files instead of symlinking`);
   console.log(`  ${pc.dim("-y, --yes")}            Skip confirmation prompts`);
-  console.log(`  ${pc.dim("--category, -c")}       Filter by category (use with find)`);
+  console.log(`  ${pc.dim("--category, -c")}       Filter by category (use with find/list --remote)`);
+  console.log(`  ${pc.dim("--search, -s")}         Filter by search term (use with list --remote)`);
   console.log();
   console.log(`${pc.bold("Environment:")}`);
   console.log(`  ${pc.dim("HEURIST_SKILLS_API")}   Override marketplace API URL`);
@@ -102,6 +107,7 @@ async function main(): Promise<void> {
         await infoCommand(commandArgs);
         break;
       }
+      case "check":
       case "check-updates":
       case "update-check": {
         const { checkUpdatesCommand } = await import("./commands/check-updates.ts");

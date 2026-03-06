@@ -23,9 +23,13 @@ export async function infoCommand(args: string[]): Promise<void> {
   let detail;
   try {
     detail = await getSkill(slug);
-  } catch {
-    spinner.stop(`Skill ${pc.red(slug)} not found.`);
-    return;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("API error 404")) {
+      spinner.stop(`Skill ${pc.red(slug)} not found.`);
+      throw new Error(`Skill ${slug} not found.`);
+    }
+    spinner.stop(`Failed to fetch info for ${pc.cyan(slug)}.`);
+    throw err;
   }
 
   spinner.stop(`${pc.bold(detail.slug)}`);
