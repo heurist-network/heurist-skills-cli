@@ -5,33 +5,86 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { downloadSkill, getSkill, listSkills } from "../api.ts";
-import { addToLock } from "../lock.ts";
 import {
-  installSingleFile,
-  installZipBundle,
-  isInstalled,
+  agents,
+  detectInstalledAgents,
+  getNonUniversalAgents,
+  getUniversalAgents,
+  isValidAgent,
+  type AgentType,
+} from "../agents.ts";
+import {
+  getCanonicalPath,
+  getInstallPath,
+  installDownloadedSkill,
+  removePathIfExists,
+  type InstallMode,
   type Scope,
 } from "../installer.ts";
+import { getLockEntry, upsertLockEntry, type LockEntry } from "../lock.ts";
+
+interface AddOptions {
+  requestedAgents: string[];
+  global: boolean;
+  skipConfirm: boolean;
+  copy: boolean;
+  slug?: string;
+}
 
 export async function addCommand(args: string[]): Promise<void> {
-  const scope: Scope = args.includes("-g") || args.includes("--global")
-    ? "global"
-    : "local";
+  const options = parseAddOptions(args);
+  let slug = options.slug;
 
-  // Filter out flags to get slug
-  const positional = args.filter((a) => !a.startsWith("-"));
-  let slug = positional[0];
-
-  // If no slug provided, show interactive search
   if (!slug) {
     slug = await interactiveSearch();
     if (!slug) return;
   }
 
   const spinner = p.spinner();
+  spinner.start(`Fetching skill info for ${pc.cyan(slug)}`);
 
-  // Check if already installed
-  if (isInstalled(scope, slug)) {
+  let detail;
+  try {
+    detail = await getSkill(slug);
+  } catch (err) {
+    spinner.stop("Skill lookup failed.");
+    if (err instanceof Error && err.message.includes("API error 404")) {
+      throw new Error(`Skill ${slug} not found.`);
+    }
+    throw err;
+  }
+
+  if (detail.verification_status !== "verified") {
+    spinner.stop(
+      `Skill ${pc.red(slug)} is ${pc.yellow(detail.verification_status)} and cannot be installed.`,
+    );
+    throw new Error("Only verified skills can be installed.");
+  }
+
+  spinner.stop(`Found: ${pc.cyan(detail.name)} — ${detail.description}`);
+
+  const warnings = getCapabilityWarnings(detail.capabilities);
+  if (warnings.length > 0) {
+    p.log.warn(
+      pc.yellow("Capabilities:") + "\n" + warnings.map((w) => `  - ${w}`).join("\n"),
+    );
+    if (!options.skipConfirm) {
+      const proceed = await p.confirm({
+        message: "This skill has sensitive capabilities. Continue?",
+      });
+      if (!proceed || typeof proceed === "symbol") {
+        p.log.info("Cancelled.");
+        return;
+      }
+    }
+  }
+
+  const targetAgents = await resolveTargetAgents(options);
+  const scope: Scope = await resolveScope(options);
+  const installMode: InstallMode = await resolveInstallMode(options);
+  const existing = getLockEntry(scope, slug);
+
+  if (existing && !options.skipConfirm) {
     const shouldOverwrite = await p.confirm({
       message: `${pc.yellow(slug)} is already installed (${scope}). Reinstall?`,
     });
@@ -41,72 +94,257 @@ export async function addCommand(args: string[]): Promise<void> {
     }
   }
 
-  // Fetch skill details
-  spinner.start(`Fetching skill info for ${pc.cyan(slug)}`);
-  let detail;
-  try {
-    detail = await getSkill(slug);
-  } catch (err) {
-    spinner.stop(`Skill ${pc.red(slug)} not found.`);
-    return;
-  }
-  spinner.stop(`Found: ${pc.cyan(detail.name)} — ${detail.description}`);
+  const summaryLines = buildSummaryLines({
+    slug,
+    scope,
+    mode: installMode,
+    agents: targetAgents,
+  });
 
-  // Show capabilities warning if risky
-  const caps = detail.capabilities;
-  const warnings: string[] = [];
-  if (caps.requires_private_keys) warnings.push("Requires private keys");
-  if (caps.can_sign_transactions) warnings.push("Can sign transactions");
-  if (caps.uses_leverage) warnings.push("Uses leverage");
-  if (caps.requires_exchange_api_keys) warnings.push("Requires exchange API keys");
+  console.log();
+  p.note(summaryLines.join("\n"), "Installation Summary");
 
-  if (warnings.length > 0) {
-    p.log.warn(
-      pc.yellow("Capabilities:") + "\n" + warnings.map((w) => `  - ${w}`).join("\n"),
-    );
-    const proceed = await p.confirm({
-      message: "This skill has sensitive capabilities. Continue?",
-    });
-    if (!proceed || typeof proceed === "symbol") {
+  if (!options.skipConfirm) {
+    const confirmed = await p.confirm({ message: "Proceed with installation?" });
+    if (!confirmed || typeof confirmed === "symbol") {
       p.log.info("Cancelled.");
       return;
     }
   }
 
-  // Download
-  spinner.start(`Downloading ${pc.cyan(slug)}`);
-  let download;
-  try {
-    download = await downloadSkill(slug);
-  } catch (err) {
-    spinner.stop(`Download failed: ${(err as Error).message}`);
-    return;
+  if (existing) {
+    await cleanupLockEntry(existing);
   }
+
+  spinner.start(`Downloading ${pc.cyan(slug)}`);
+  const download = await downloadSkill(slug);
   spinner.stop(
     `Downloaded ${pc.green(download.filename)} (${formatBytes(download.content.length)})`,
   );
 
-  // Install
   spinner.start(`Installing to ${scope} scope`);
-  let installPath: string;
-  if (download.isZip) {
-    installPath = installZipBundle(scope, slug, download.content);
-  } else {
-    installPath = installSingleFile(scope, slug, download.content);
-  }
-  spinner.stop(`Installed to ${pc.dim(installPath)}`);
+  const installResult = await installDownloadedSkill({
+    scope,
+    slug,
+    content: download.content,
+    isZip: download.isZip,
+    agents: targetAgents,
+    mode: installMode,
+  });
+  spinner.stop(`Installed to ${pc.dim(installResult.canonicalPath)}`);
 
-  // Update lock file
-  addToLock({
+  upsertLockEntry(scope, {
     slug,
     name: detail.name,
     sha256: download.sha256,
     installed_at: new Date().toISOString(),
-    install_path: installPath,
     is_zip: download.isZip,
+    install_method: installMode,
+    canonical_path: installResult.canonicalPath,
+    agent_installs: installResult.agentInstalls,
   });
 
+  if (installResult.symlinkFallbackAgents.length > 0) {
+    p.log.warn(
+      `Symlinks failed for ${installResult.symlinkFallbackAgents.map((agent) => agents[agent].displayName).join(", ")}.`,
+    );
+    p.log.message(pc.dim("Files were copied instead."));
+  }
+
   p.log.success(`${pc.green("+")} ${pc.bold(detail.name)} installed successfully.`);
+}
+
+function parseAddOptions(args: string[]): AddOptions {
+  const options: AddOptions = {
+    requestedAgents: [],
+    global: false,
+    skipConfirm: false,
+    copy: false,
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg === "-g" || arg === "--global") {
+      options.global = true;
+      continue;
+    }
+    if (arg === "-y" || arg === "--yes") {
+      options.skipConfirm = true;
+      continue;
+    }
+    if (arg === "--copy") {
+      options.copy = true;
+      continue;
+    }
+    if (arg === "-a" || arg === "--agent") {
+      while (i + 1 < args.length && !args[i + 1]!.startsWith("-")) {
+        options.requestedAgents.push(args[++i]!);
+      }
+      continue;
+    }
+    if (!arg.startsWith("-") && !options.slug) {
+      options.slug = arg;
+    }
+  }
+
+  return options;
+}
+
+async function resolveTargetAgents(options: AddOptions): Promise<AgentType[]> {
+  if (options.requestedAgents.length > 0) {
+    const invalid = options.requestedAgents.filter((agent) => !isValidAgent(agent));
+    if (invalid.length > 0) {
+      throw new Error(
+        `Invalid agent${invalid.length > 1 ? "s" : ""}: ${invalid.join(", ")}`,
+      );
+    }
+    return ensureUniversalAgents(options.requestedAgents as AgentType[]);
+  }
+
+  const detectedAgents = await detectInstalledAgents();
+  const universalAgents = new Set(getUniversalAgents());
+  const detectedNonUniversal = detectedAgents.filter((agent) => !universalAgents.has(agent));
+
+  if (options.skipConfirm) {
+    return ensureUniversalAgents(detectedNonUniversal);
+  }
+
+  if (detectedNonUniversal.length === 1) {
+    const agent = detectedNonUniversal[0]!;
+    p.log.info(`Installing to: ${pc.cyan(agents[agent].displayName)}`);
+    return ensureUniversalAgents([agent]);
+  }
+
+  const selectableAgents = getNonUniversalAgents();
+  const selected = await p.multiselect({
+    message: detectedNonUniversal.length > 1
+      ? "Select additional agents to install to:"
+      : "Select agents to install to:",
+    options: selectableAgents.map((agent) => ({
+      value: agent,
+      label: agents[agent].displayName,
+      hint: options.global ? agents[agent].globalSkillsDir : agents[agent].skillsDir,
+    })),
+    initialValues: detectedNonUniversal,
+  });
+
+  if (typeof selected === "symbol") {
+    throw new Error("Installation cancelled.");
+  }
+
+  return ensureUniversalAgents(selected as AgentType[]);
+}
+
+async function resolveScope(options: AddOptions): Promise<Scope> {
+  if (options.global) {
+    return "global";
+  }
+
+  if (options.skipConfirm) {
+    return "local";
+  }
+
+  const selected = await p.select({
+    message: "Installation scope",
+    options: [
+      {
+        value: "local",
+        label: "Project",
+        hint: "Install in the current repository",
+      },
+      {
+        value: "global",
+        label: "Global",
+        hint: "Install in your home directory",
+      },
+    ],
+  });
+
+  if (typeof selected === "symbol") {
+    throw new Error("Installation cancelled.");
+  }
+
+  return selected as Scope;
+}
+
+async function resolveInstallMode(options: AddOptions): Promise<InstallMode> {
+  if (options.copy) {
+    return "copy";
+  }
+
+  if (options.skipConfirm) {
+    return "symlink";
+  }
+
+  const selected = await p.select({
+    message: "Installation method",
+    options: [
+      {
+        value: "symlink",
+        label: "Symlink (Recommended)",
+        hint: "Single source of truth, easier updates",
+      },
+      {
+        value: "copy",
+        label: "Copy",
+        hint: "Write separate copies into each agent directory",
+      },
+    ],
+  });
+
+  if (typeof selected === "symbol") {
+    throw new Error("Installation cancelled.");
+  }
+
+  return selected as InstallMode;
+}
+
+function ensureUniversalAgents(selectedAgents: AgentType[]): AgentType[] {
+  const combined = new Set<AgentType>(getUniversalAgents());
+  for (const agent of selectedAgents) {
+    combined.add(agent);
+  }
+  return Array.from(combined);
+}
+
+function buildSummaryLines(options: {
+  slug: string;
+  scope: Scope;
+  mode: InstallMode;
+  agents: AgentType[];
+}): string[] {
+  const lines: string[] = [];
+  const canonicalPath = getCanonicalPath(options.scope, options.slug);
+  lines.push(`${pc.dim("scope:")} ${options.scope}`);
+  lines.push(`${pc.dim("method:")} ${options.mode}`);
+  lines.push(`${pc.dim("canonical:")} ${canonicalPath}`);
+  lines.push(
+    `${pc.dim("agents:")} ${options.agents.map((agent) => agents[agent].displayName).join(", ")}`,
+  );
+
+  if (options.mode === "copy") {
+    for (const agent of options.agents) {
+      lines.push(
+        `${pc.dim(`${agents[agent].displayName}:`)} ${getInstallPath(options.scope, agent, options.slug)}`,
+      );
+    }
+  }
+
+  return lines;
+}
+
+async function cleanupLockEntry(entry: LockEntry): Promise<void> {
+  const paths = new Set<string>();
+  paths.add(entry.canonical_path);
+  for (const install of Object.values(entry.agent_installs)) {
+    if (install?.path) {
+      paths.add(install.path);
+    }
+  }
+
+  for (const path of paths) {
+    await removePathIfExists(path);
+  }
 }
 
 async function interactiveSearch(): Promise<string | undefined> {
@@ -121,7 +359,7 @@ async function interactiveSearch(): Promise<string | undefined> {
   spinner.start("Searching marketplace...");
 
   const result = await listSkills({ search: searchTerm, limit: 20 });
-  spinner.stop(`Found ${result.total} skill(s).`);
+  spinner.stop(`Found ${result.skills.length} skill(s).`);
 
   if (result.skills.length === 0) {
     p.log.warn("No skills found matching that query.");
@@ -130,15 +368,29 @@ async function interactiveSearch(): Promise<string | undefined> {
 
   const selected = await p.select({
     message: "Select a skill to install:",
-    options: result.skills.map((s) => ({
-      value: s.slug,
-      label: `${s.name} ${pc.dim(`[${s.category || "uncategorized"}]`)}`,
-      hint: s.description,
+    options: result.skills.map((skill) => ({
+      value: skill.slug,
+      label: `${skill.name} ${pc.dim(`[${skill.category || "uncategorized"}]`)}`,
+      hint: skill.description,
     })),
   });
 
   if (typeof selected === "symbol") return undefined;
   return selected as string;
+}
+
+function getCapabilityWarnings(capabilities: {
+  requires_private_keys: boolean;
+  can_sign_transactions: boolean;
+  uses_leverage: boolean;
+  requires_exchange_api_keys: boolean;
+}): string[] {
+  const warnings: string[] = [];
+  if (capabilities.requires_private_keys) warnings.push("Requires private keys");
+  if (capabilities.can_sign_transactions) warnings.push("Can sign transactions");
+  if (capabilities.uses_leverage) warnings.push("Uses leverage");
+  if (capabilities.requires_exchange_api_keys) warnings.push("Requires exchange API keys");
+  return warnings;
 }
 
 function formatBytes(bytes: number): string {

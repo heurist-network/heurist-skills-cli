@@ -5,10 +5,12 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { getSkill, listSkillFiles } from "../api.ts";
-import { getInstalledSlugs } from "../lock.ts";
+import { agents } from "../agents.ts";
+import { pathExists } from "../installer.ts";
+import { getInstalledEntries } from "../lock.ts";
 
 export async function infoCommand(args: string[]): Promise<void> {
-  const slug = args.filter((a) => !a.startsWith("-"))[0];
+  const slug = args.filter((arg) => !arg.startsWith("-"))[0];
 
   if (!slug) {
     p.log.error("Usage: heurist-skills info <slug>");
@@ -26,9 +28,7 @@ export async function infoCommand(args: string[]): Promise<void> {
     return;
   }
 
-  spinner.stop(`${pc.bold(detail.name)}`);
-
-  const installed = getInstalledSlugs().find((e) => e.slug === slug);
+  spinner.stop(`${pc.bold(detail.slug)}`);
 
   console.log();
   console.log(`  ${pc.bold("Name:")}         ${detail.name}`);
@@ -58,34 +58,44 @@ export async function infoCommand(args: string[]): Promise<void> {
     ["accesses_user_portfolio", caps.accesses_user_portfolio],
   ] as const;
 
-  for (const [name, val] of capList) {
-    const icon = val ? pc.yellow("yes") : pc.dim("no");
-    console.log(`    ${name}: ${icon}`);
+  for (const [name, value] of capList) {
+    console.log(`    ${name}: ${value ? pc.yellow("yes") : pc.dim("no")}`);
   }
 
-  // Show files
   try {
     const filesInfo = await listSkillFiles(slug);
     console.log();
     console.log(`  ${pc.bold("Files:")} (${filesInfo.file_count})`);
-    for (const f of filesInfo.files) {
-      console.log(`    ${pc.dim(f.path)} ${pc.dim(`(${formatBytes(f.size)})`)}`);
+    for (const file of filesInfo.files) {
+      console.log(`    ${pc.dim(file.path)}`);
     }
   } catch {
-    // Files endpoint may fail for non-verified skills
+    // Files endpoint may fail for non-verified skills.
   }
 
-  if (installed) {
+  const installed = getInstalledEntries("all").filter((entry) => entry.slug === slug);
+  if (installed.length > 0) {
     console.log();
-    console.log(`  ${pc.green("Installed")} at ${pc.dim(installed.install_path)}`);
-    console.log(`  ${pc.dim(`sha256: ${installed.sha256.slice(0, 32)}...`)}`);
+    console.log(`  ${pc.bold("Installed:")}`);
+    for (const entry of installed) {
+      const canonicalExists = await pathExists(entry.canonical_path);
+      const activeAgents = Object.entries(entry.agent_installs)
+        .filter(([, install]) => {
+          if (!install) return false;
+          if (install.kind === "canonical") {
+            return canonicalExists;
+          }
+          return true;
+        })
+        .map(([agent]) => agents[agent as keyof typeof agents].displayName);
+
+      console.log(`    ${entry.scope}: ${pc.dim(entry.canonical_path)}`);
+      console.log(`      sha256: ${pc.dim(`${entry.sha256.slice(0, 32)}...`)}`);
+      if (activeAgents.length > 0) {
+        console.log(`      agents: ${pc.dim(activeAgents.join(", "))}`);
+      }
+    }
   }
 
   console.log();
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

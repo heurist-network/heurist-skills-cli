@@ -45,7 +45,8 @@ export interface SkillDetail extends SkillSummary {
 
 export interface SkillFileEntry {
   path: string;
-  size: number;
+  cid?: string;
+  gateway_url?: string;
 }
 
 export interface SkillListResponse {

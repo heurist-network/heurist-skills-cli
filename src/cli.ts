@@ -6,7 +6,7 @@
  *   heurist-skills add <slug>        Install a skill
  *   heurist-skills remove <slug>     Uninstall a skill
  *   heurist-skills list              List installed skills
- *   heurist-skills list --remote     Browse marketplace
+ *   heurist-skills find [query]      Search marketplace
  *   heurist-skills info <slug>       Show skill details
  *   heurist-skills check-updates     Check for available updates
  *   heurist-skills help              Show this help
@@ -31,18 +31,19 @@ function printHelp(): void {
   console.log(`${pc.bold("Commands:")}`);
   console.log(`  ${pc.cyan("add")} <slug>          Install a skill from the marketplace`);
   console.log(`  ${pc.cyan("remove")} <slug>       Uninstall a skill`);
-  console.log(`  ${pc.cyan("list")}                List installed skills`);
-  console.log(`  ${pc.cyan("list")} --remote       Browse marketplace skills`);
+  console.log(`  ${pc.cyan("list")}                List project-installed skills`);
+  console.log(`  ${pc.cyan("list")} --global       List global-installed skills`);
+  console.log(`  ${pc.cyan("find")} [query]        Search the skill marketplace  (aliases: f, search)`);
   console.log(`  ${pc.cyan("info")} <slug>         Show detailed skill info`);
   console.log(`  ${pc.cyan("check-updates")}       Check for available updates`);
   console.log(`  ${pc.cyan("help")}                Show this help`);
   console.log();
   console.log(`${pc.bold("Options:")}`);
-  console.log(`  ${pc.dim("-g, --global")}         Install/remove globally (~/.heurist/skills/)`);
+  console.log(`  ${pc.dim("-g, --global")}         Use the global scope (~/.agents/skills/)`);
+  console.log(`  ${pc.dim("-a, --agent <agent>")}  Target or filter specific agents`);
+  console.log(`  ${pc.dim("--copy")}               Copy files instead of symlinking`);
   console.log(`  ${pc.dim("-y, --yes")}            Skip confirmation prompts`);
-  console.log(`  ${pc.dim("--remote, -r")}         List remote marketplace skills`);
-  console.log(`  ${pc.dim("--category, -c")}       Filter by category`);
-  console.log(`  ${pc.dim("--search, -s")}         Search by name/description`);
+  console.log(`  ${pc.dim("--category, -c")}       Filter by category (use with find)`);
   console.log();
   console.log(`${pc.bold("Environment:")}`);
   console.log(`  ${pc.dim("HEURIST_SKILLS_API")}   Override marketplace API URL`);
@@ -86,6 +87,13 @@ async function main(): Promise<void> {
       case "ls": {
         const { listCommand } = await import("./commands/list.ts");
         await listCommand(commandArgs);
+        break;
+      }
+      case "find":
+      case "f":
+      case "search": {
+        const { findCommand } = await import("./commands/find.ts");
+        await findCommand(commandArgs);
         break;
       }
       case "info":
