@@ -63,6 +63,12 @@ export async function addCommand(args: string[]): Promise<void> {
 
   spinner.stop(`Found: ${pc.cyan(detail.name)} — ${detail.description}`);
 
+  if (detail.external_api_dependencies.length > 0) {
+    p.log.info(
+      `External APIs: ${pc.dim(detail.external_api_dependencies.join(", "))}`,
+    );
+  }
+
   const warnings = getCapabilityWarnings(detail.capabilities);
   if (warnings.length > 0) {
     p.log.warn(

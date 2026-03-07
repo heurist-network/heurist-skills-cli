@@ -146,8 +146,11 @@ export async function listRemote(options: ListOptions): Promise<void> {
     const status = installed.has(skill.slug) ? pc.green(" [installed]") : "";
     const category = skill.category ? pc.dim(` [${skill.category}]`) : "";
     const risk = skill.risk_tier ? pc.dim(` risk:${skill.risk_tier}`) : "";
+    const externalApis = skill.external_api_dependencies.length > 0
+      ? pc.dim(` apis:${skill.external_api_dependencies.join(", ")}`)
+      : "";
 
-    console.log(`  ${pc.cyan(skill.slug)}${category}${risk}${status}`);
+    console.log(`  ${pc.cyan(skill.slug)}${category}${risk}${externalApis}${status}`);
     console.log(`    ${skill.description}`);
 
     const warnings: string[] = [];

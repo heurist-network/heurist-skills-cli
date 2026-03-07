@@ -42,6 +42,9 @@ export async function infoCommand(args: string[]): Promise<void> {
   console.log(`  ${pc.bold("Risk Tier:")}    ${detail.risk_tier || "—"}`);
   console.log(`  ${pc.bold("Status:")}       ${detail.verification_status}`);
   console.log(`  ${pc.bold("Source:")}       ${detail.source_url || "—"}`);
+  if (detail.external_api_dependencies.length > 0) {
+    console.log(`  ${pc.bold("External APIs:")} ${detail.external_api_dependencies.join(", ")}`);
+  }
 
   if (detail.author?.display_name) {
     console.log(`  ${pc.bold("Author:")}       ${detail.author.display_name}`);

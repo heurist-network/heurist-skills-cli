@@ -25,6 +25,7 @@ export interface SkillSummary {
     github_username?: string;
   };
   file_url: string | null;
+  external_api_dependencies: string[];
   capabilities: {
     requires_secrets: boolean;
     requires_private_keys: boolean;
