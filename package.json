@@ -1,6 +1,6 @@
 {
   "name": "@heurist-network/skills",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "CLI tool for browsing, installing, and managing Heurist Mesh skills from the skill marketplace registry.",
   "type": "module",
   "bin": {
