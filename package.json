@@ -4,7 +4,7 @@
   "description": "CLI tool for browsing, installing, and managing Heurist Mesh skills from the skill marketplace registry.",
   "type": "module",
   "bin": {
-    "heurist-skills": "./bin/cli.mjs"
+    "heurist-skills": "bin/cli.mjs"
   },
   "files": [
     "dist",
