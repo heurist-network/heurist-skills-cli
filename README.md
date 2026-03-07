@@ -1,4 +1,4 @@
-# @heurist-network/skills-cli
+# @heurist-network/skills
 
 A CLI for browsing, installing, and managing verified AI agent skills from the [Heurist Mesh](https://mesh.heurist.ai) skill marketplace.
 
@@ -7,13 +7,13 @@ Skills are reusable instruction sets (`SKILL.md` files) that extend coding agent
 ## Quick Start
 
 ```bash
-npx @heurist-network/skills-cli add binance-web3-crypto-market-rank
+npx @heurist-network/skills add binance-web3-crypto-market-rank
 ```
 
 Or install globally:
 
 ```bash
-npm i -g @heurist-network/skills-cli
+npm i -g @heurist-network/skills
 heurist-skills add binance-web3-crypto-market-rank
 ```
 
