@@ -9,6 +9,7 @@
  *   heurist-skills find [query]      Search marketplace
  *   heurist-skills info <slug>       Show skill details
  *   heurist-skills check-updates     Check for available updates
+ *   heurist-skills update            Update all installed skills
  *   heurist-skills help              Show this help
  */
 
@@ -40,6 +41,7 @@ function printHelp(): void {
   console.log(`  ${pc.cyan("find")} [query]        Search the skill marketplace          (aliases: search, f)`);
   console.log(`  ${pc.cyan("info")} <slug>         Show detailed skill info              (aliases: show)`);
   console.log(`  ${pc.cyan("check")}               Check for available updates           (aliases: check-updates, update-check)`);
+  console.log(`  ${pc.cyan("update")}              Update all installed skills            (aliases: upgrade)`);
   console.log(`  ${pc.cyan("help")}                Show this help`);
   console.log();
   console.log(`${pc.bold("Options:")}`);
@@ -52,7 +54,7 @@ function printHelp(): void {
   console.log();
   console.log(`${pc.bold("Environment:")}`);
   console.log(`  ${pc.dim("HEURIST_SKILLS_API")}   Override marketplace API URL`);
-  console.log(`                       ${pc.dim("(default: https://mesh.heurist.ai)")}`);
+  console.log(`                       ${pc.dim("(default: https://mesh.heurist.xyz)")}`);
   console.log();
 }
 
@@ -112,6 +114,12 @@ async function main(): Promise<void> {
       case "update-check": {
         const { checkUpdatesCommand } = await import("./commands/check-updates.ts");
         await checkUpdatesCommand(commandArgs);
+        break;
+      }
+      case "update":
+      case "upgrade": {
+        const { updateCommand } = await import("./commands/update.ts");
+        await updateCommand(commandArgs);
         break;
       }
       default:

@@ -160,7 +160,7 @@ These features are unique to the Heurist marketplace and not present in other sk
 
 | Variable | Description |
 |----------|-------------|
-| `HEURIST_SKILLS_API` | Override marketplace API URL (default: `https://mesh.heurist.ai`) |
+| `HEURIST_SKILLS_API` | Override marketplace API URL (default: `https://mesh.heurist.xyz`) |
 
 ## Lock File Compatibility
 

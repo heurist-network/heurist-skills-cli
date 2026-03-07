@@ -5,7 +5,7 @@
  * (or a custom base URL via HEURIST_SKILLS_API env var).
  */
 
-const DEFAULT_API_URL = "https://mesh.heurist.ai";
+const DEFAULT_API_URL = "https://mesh.heurist.xyz";
 
 function getBaseUrl(): string {
   return process.env["HEURIST_SKILLS_API"] || DEFAULT_API_URL;

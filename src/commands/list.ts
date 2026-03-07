@@ -20,7 +20,7 @@ export interface ListOptions {
 export async function listCommand(args: string[]): Promise<void> {
   const options = parseListOptions(args);
 
-  if (options.showRemote) {
+  if (options.showRemote || options.search || options.category) {
     await listRemote(options);
     return;
   }
