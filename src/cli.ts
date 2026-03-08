@@ -13,11 +13,13 @@
  *   heurist-skills help              Show this help
  */
 
+import { createRequire } from "node:module";
 import "dotenv/config";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 
-const VERSION = "0.1.0";
+const require = createRequire(import.meta.url);
+const { version: VERSION } = require("../package.json");
 
 const LOGO = `
 ${pc.cyan("██╗  ██╗███████╗██╗   ██╗██████╗ ██╗███████╗████████╗")}
