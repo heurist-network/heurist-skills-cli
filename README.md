@@ -2,19 +2,19 @@
 
 A CLI for browsing, installing, and managing verified AI agent skills from the [Heurist Mesh](https://mesh.heurist.ai) skill marketplace.
 
-Skills are reusable instruction sets (`SKILL.md` files) that extend coding agent capabilities. The Heurist marketplace provides curated, verified skills for Web3, DeFi, and blockchain development — stored on [Autonomys](https://autonomys.xyz) decentralized storage.
+Skills are reusable instruction sets (`SKILL.md` files) that extend coding agent capabilities. The Heurist marketplace focuses on verified, secure skills across crypto, finance, market intelligence, social data, and developer workflows: every new skill and every new version is audited before it can be installed, only `verified` skills are available through the CLI, sensitive capabilities trigger explicit warnings, and all marketplace artifacts are stored on [Autonomys](https://autonomys.xyz) decentralized storage with SHA256 integrity tracking.
 
 ## Quick Start
 
 ```bash
-npx @heurist-network/skills add binance-web3-crypto-market-rank
+npx @heurist-network/skills add heurist-mesh
 ```
 
 Or install globally:
 
 ```bash
 npm i -g @heurist-network/skills
-heurist-skills add binance-web3-crypto-market-rank
+heurist-skills add heurist-mesh
 ```
 
 ## Commands
@@ -52,8 +52,8 @@ heurist-skills add
 Search the skill marketplace.
 
 ```bash
-heurist-skills find binance
-heurist-skills find --category defi
+heurist-skills find heurist
+heurist-skills find --category Stocks
 heurist-skills find                   # browse all
 ```
 
@@ -67,7 +67,7 @@ List installed skills or browse the marketplace.
 heurist-skills list                   # project-installed skills
 heurist-skills list --global          # global-installed skills
 heurist-skills list --remote          # browse marketplace
-heurist-skills list --remote -c defi  # filter by category
+heurist-skills list --remote -c Crypto # filter by category
 heurist-skills list -a claude-code    # filter by agent
 ```
 
@@ -78,7 +78,7 @@ Aliases: `ls`
 Show detailed skill information including capabilities, files, and install state.
 
 ```bash
-heurist-skills info binance-web3-crypto-market-rank
+heurist-skills info heurist-mesh
 ```
 
 Aliases: `show`
@@ -146,15 +146,6 @@ The project lock file (`skills-lock.json`) is designed to be committed to git fo
 Agents that share `.agents/skills/` (Cursor, Codex, OpenCode, Cline, Gemini CLI, GitHub Copilot) are "universal" — they read skills from the same canonical directory. Non-universal agents (Claude Code, Windsurf, Roo Code, Continue) have their own paths and receive symlinks or copies.
 
 The CLI auto-detects which agents are installed on your system. If one agent is found, it installs silently. If multiple are found, it prompts for selection.
-
-## Heurist-Specific Features
-
-These features are unique to the Heurist marketplace and not present in other skills CLIs:
-
-- **Verification gate** — Only `verified` skills can be installed. Draft and archived skills are blocked.
-- **Capability warnings** — Before installing, the CLI warns about sensitive capabilities: private key access, transaction signing, leverage usage, and exchange API key requirements.
-- **Decentralized storage** — Skills are stored on Autonomys Auto Drive. Each file gets its own content-addressed CID for integrity.
-- **SHA256 integrity** — Download responses include `X-Skill-SHA256` for content verification and update tracking.
 
 ## Configuration
 
