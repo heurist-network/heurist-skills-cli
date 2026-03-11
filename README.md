@@ -132,18 +132,47 @@ The project lock file (`skills-lock.json`) is designed to be committed to git fo
 
 | Agent | Project Path | Global Path |
 |-------|-------------|-------------|
+| AdaL | `.adal/skills/` | `~/.adal/skills/` |
+| Amp | `.agents/skills/` | `~/.config/agents/skills/` |
+| Antigravity | `.agent/skills/` | `~/.gemini/antigravity/skills/` |
+| Augment | `.augment/skills/` | `~/.augment/skills/` |
 | Claude Code | `.claude/skills/` | `~/.claude/skills/` |
-| Cursor | `.agents/skills/` | `~/.cursor/skills/` |
-| Codex | `.agents/skills/` | `~/.codex/skills/` |
-| OpenCode | `.agents/skills/` | `~/.config/opencode/skills/` |
 | Cline | `.agents/skills/` | `~/.agents/skills/` |
-| Windsurf | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
+| CodeBuddy | `.codebuddy/skills/` | `~/.codebuddy/skills/` |
+| Codex | `.agents/skills/` | `~/.codex/skills/` |
+| Command Code | `.commandcode/skills/` | `~/.commandcode/skills/` |
+| Continue | `.continue/skills/` | `~/.continue/skills/` |
+| Cortex Code | `.cortex/skills/` | `~/.snowflake/cortex/skills/` |
+| Crush | `.crush/skills/` | `~/.config/crush/skills/` |
+| Cursor | `.agents/skills/` | `~/.cursor/skills/` |
+| Droid | `.factory/skills/` | `~/.factory/skills/` |
 | Gemini CLI | `.agents/skills/` | `~/.gemini/skills/` |
 | GitHub Copilot | `.agents/skills/` | `~/.copilot/skills/` |
+| Goose | `.goose/skills/` | `~/.config/goose/skills/` |
+| iFlow CLI | `.iflow/skills/` | `~/.iflow/skills/` |
+| Junie | `.junie/skills/` | `~/.junie/skills/` |
+| Kilo Code | `.kilocode/skills/` | `~/.kilocode/skills/` |
+| Kimi Code CLI | `.agents/skills/` | `~/.config/agents/skills/` |
+| Kiro CLI | `.kiro/skills/` | `~/.kiro/skills/` |
+| Kode | `.kode/skills/` | `~/.kode/skills/` |
+| MCPJam | `.mcpjam/skills/` | `~/.mcpjam/skills/` |
+| Mistral Vibe | `.vibe/skills/` | `~/.vibe/skills/` |
+| Mux | `.mux/skills/` | `~/.mux/skills/` |
+| Neovate | `.neovate/skills/` | `~/.neovate/skills/` |
+| OpenClaw | `skills/` | `~/.openclaw/skills/` |
+| OpenCode | `.agents/skills/` | `~/.config/opencode/skills/` |
+| OpenHands | `.openhands/skills/` | `~/.openhands/skills/` |
+| Pi | `.pi/skills/` | `~/.pi/agent/skills/` |
+| Pochi | `.pochi/skills/` | `~/.pochi/skills/` |
+| Qoder | `.qoder/skills/` | `~/.qoder/skills/` |
+| Qwen Code | `.qwen/skills/` | `~/.qwen/skills/` |
 | Roo Code | `.roo/skills/` | `~/.roo/skills/` |
-| Continue | `.continue/skills/` | `~/.continue/skills/` |
+| Trae | `.trae/skills/` | `~/.trae/skills/` |
+| Trae CN | `.trae/skills/` | `~/.trae-cn/skills/` |
+| Windsurf | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
+| Zencoder | `.zencoder/skills/` | `~/.zencoder/skills/` |
 
-Agents that share `.agents/skills/` (Cursor, Codex, OpenCode, Cline, Gemini CLI, GitHub Copilot) are "universal" — they read skills from the same canonical directory. Non-universal agents (Claude Code, Windsurf, Roo Code, Continue) have their own paths and receive symlinks or copies.
+Agents that share `.agents/skills/` (Amp, Cline, Codex, Cursor, Gemini CLI, GitHub Copilot, Kimi Code CLI, OpenCode) are "universal" — they read skills from the same canonical directory. Non-universal agents have their own paths and receive symlinks or copies.
 
 The CLI auto-detects which agents are installed on your system. If one agent is found, it installs silently. If multiple are found, it prompts for selection.
 
