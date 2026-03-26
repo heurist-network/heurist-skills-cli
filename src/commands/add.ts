@@ -215,24 +215,33 @@ async function resolveTargetAgents(options: AddOptions): Promise<AgentType[]> {
     return ensureUniversalAgents(detectedNonUniversal);
   }
 
+  const universalList = getUniversalAgents();
+  const universalNames = universalList.map((a) => agents[a].displayName).join(", ");
+
   if (detectedNonUniversal.length === 1) {
     const agent = detectedNonUniversal[0]!;
+    p.log.info(
+      `${pc.dim("Always included")} ${pc.cyan("(.agents/skills)")}: ${universalNames}`,
+    );
     p.log.info(`Installing to: ${pc.cyan(agents[agent].displayName)}`);
     return ensureUniversalAgents([agent]);
   }
 
+  p.log.info(
+    `${pc.dim("Always included")} ${pc.cyan("(.agents/skills)")}: ${universalNames}`,
+  );
+
   const selectableAgents = getNonUniversalAgents();
-  const selected = await p.multiselect({
-    message: detectedNonUniversal.length > 1
-      ? "Select additional agents to install to:"
-      : "Select agents to install to:",
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- clack distributes Option<Value> over union literals; .map() widens it
+  const selected = await (p.multiselect as any)({
+    message: "Select additional agents to install to:",
     options: selectableAgents.map((agent) => ({
       value: agent,
       label: agents[agent].displayName,
       hint: options.global ? agents[agent].globalSkillsDir : agents[agent].skillsDir,
     })),
     initialValues: detectedNonUniversal,
-  });
+  }) as AgentType[] | symbol;
 
   if (typeof selected === "symbol") {
     throw new Error("Installation cancelled.");
